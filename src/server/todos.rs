@@ -48,3 +48,31 @@ pub async fn list_todos(filter: Filter) -> Result<Vec<Todo>, ServerFnError> {
 
     Ok(todos)
 }
+
+#[server]
+pub async fn add_todo(title: String) -> Result<Todo, ServerFnError> {
+    use crate::state::AppState;
+    use sqlx::query_as;
+
+    let title = title.trim().to_owned();
+
+    if title.is_empty() {
+        return Err(ServerFnError::ServerError(
+            "todo title cannot be empty".to_string(),
+        ));
+    }
+
+    let app_state = expect_context::<AppState>();
+    let todo = query_as::<_, Todo>(
+        r#"
+            INSERT INTO todos (title)
+            VALUES (?1)
+            RETURNING id, title, completed, created_at, updated_at
+        "#,
+    )
+    .bind(title)
+    .fetch_one(&app_state.pool)
+    .await?;
+
+    Ok(todo)
+}
