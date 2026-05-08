@@ -29,12 +29,12 @@ pub fn App() -> impl IntoView {
 
     view! {
         <Stylesheet id="leptos" href="/pkg/miketang84-todomvc-105.css"/>
-        <Title text="Hello, Leptos"/>
+        <Title text="TodoMVC • Leptos"/>
 
         <Router>
-            <main class="shell">
+            <main>
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage/>
+                    <Route path=StaticSegment("") view=TodoShell/>
                 </Routes>
             </main>
         </Router>
@@ -42,21 +42,63 @@ pub fn App() -> impl IntoView {
 }
 
 #[component]
-fn HomePage() -> impl IntoView {
-    let count = RwSignal::new(0);
-    let increment = move |_| count.update(|value| *value += 1);
-
+fn TodoShell() -> impl IntoView {
     view! {
-        <section class="hero">
-            <p class="eyebrow">"Leptos + Axum SSR"</p>
-            <h1>"Hello, Leptos"</h1>
-            <p class="subtitle">
-                "This page is rendered on the server and hydrated in the browser."
-            </p>
-            <button class="cta" on:click=increment>
-                "Hydration clicks: "
-                {count}
-            </button>
-        </section>
+        <>
+            <section class="todoapp">
+                <header class="header">
+                    <h1>"todos"</h1>
+                    <input class="new-todo" placeholder="What needs to be done?" autofocus=true />
+                </header>
+                <section class="main">
+                    <input id="toggle-all" class="toggle-all" type="checkbox" />
+                    <label for="toggle-all">"Mark all as complete"</label>
+                    <ul class="todo-list">
+                        <li class="completed">
+                            <div class="view">
+                                <input class="toggle" type="checkbox" checked=true />
+                                <label>"Taste JavaScript"</label>
+                                <button class="destroy"></button>
+                            </div>
+                            <input class="edit" value="Create a TodoMVC template" />
+                        </li>
+                        <li>
+                            <div class="view">
+                                <input class="toggle" type="checkbox" />
+                                <label>"Buy a unicorn"</label>
+                                <button class="destroy"></button>
+                            </div>
+                            <input class="edit" value="Rule the web" />
+                        </li>
+                    </ul>
+                </section>
+                <footer class="footer">
+                    <span class="todo-count">
+                        <strong>"0"</strong>
+                        " item left"
+                    </span>
+                    <ul class="filters">
+                        <li>
+                            <a class="selected" href="#/">"All"</a>
+                        </li>
+                        <li>
+                            <a href="#/active">"Active"</a>
+                        </li>
+                        <li>
+                            <a href="#/completed">"Completed"</a>
+                        </li>
+                    </ul>
+                    <button class="clear-completed">"Clear completed"</button>
+                </footer>
+            </section>
+
+            <footer class="info">
+                <p>"Double-click to edit a todo"</p>
+                <p>"Built with Leptos"</p>
+                <p>
+                    <a href="https://todomvc.com/">"TodoMVC"</a>
+                </p>
+            </footer>
+        </>
     }
 }
