@@ -155,3 +155,22 @@ pub async fn edit_todo(
         ServerFnError::ServerError(format!("todo with id `{id}` was not found"))
     })
 }
+
+#[server]
+pub async fn delete_todo(id: i64) -> Result<u64, ServerFnError> {
+    use crate::state::AppState;
+    use sqlx::query;
+
+    let app_state = expect_context::<AppState>();
+    let result = query(
+        r#"
+            DELETE FROM todos
+            WHERE id = ?1
+        "#,
+    )
+    .bind(id)
+    .execute(&app_state.pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
