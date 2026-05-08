@@ -16,7 +16,7 @@ leptos_axum = { version = "=0.8.9", optional = true }
 leptos_meta = { version = "=0.8.6" }
 leptos_router = { version = "=0.8.13" }
 serde = { version = "1.0.228", features = ["derive"] }
-sqlx = { version = "0.8.6", default-features = false, features = ["chrono", "derive"], optional = true }
+sqlx = { version = "0.8.6", default-features = false, features = ["chrono", "derive", "macros", "migrate", "runtime-tokio", "sqlite"], optional = true }
 tokio = { version = "1.48.0", features = ["macros", "net", "rt-multi-thread"], optional = true }
 tower-http = { version = "0.6.6", features = ["trace"], optional = true }
 tracing = { version = "0.1.41", optional = true }
