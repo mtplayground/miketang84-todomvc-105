@@ -12,6 +12,7 @@ pub struct Todo {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Filter {
     #[default]
     All,

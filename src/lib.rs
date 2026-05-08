@@ -1,5 +1,6 @@
 pub mod app;
 pub mod domain;
+pub mod server;
 
 #[cfg(feature = "ssr")]
 pub mod config;

@@ -1,9 +1,16 @@
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    use axum::Router;
+    use axum::{
+        body::Body,
+        http::Request,
+        routing::get,
+        Router,
+    };
     use leptos::prelude::*;
-    use leptos_axum::{generate_route_list, LeptosRoutes};
+    use leptos_axum::{
+        generate_route_list, handle_server_fns_with_context, LeptosRoutes,
+    };
     use miketang84_todomvc_105::{
         app::{shell, App},
         config::RuntimeEnv,
@@ -40,16 +47,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let site_addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
     let static_file_handler = leptos_axum::file_and_error_handler(shell);
+    let server_fn_handler = {
+        let app_state = app_state.clone();
+
+        move |request: Request<Body>| {
+            let app_state = app_state.clone();
+
+            async move {
+                handle_server_fns_with_context(
+                    move || provide_context(app_state.clone()),
+                    request,
+                )
+                .await
+            }
+        }
+    };
 
     let app = Router::new()
-        .leptos_routes(&leptos_options, routes, {
-            let app_state = app_state.clone();
-            let leptos_options = leptos_options.clone();
-            move || {
-                provide_context(app_state.clone());
-                shell(leptos_options.clone())
-            }
-        })
+        .route(
+            "/api/{*fn_name}",
+            get(server_fn_handler.clone()).post(server_fn_handler),
+        )
+        .leptos_routes_with_context(
+            &leptos_options,
+            routes,
+            {
+                let app_state = app_state.clone();
+                move || provide_context(app_state.clone())
+            },
+            {
+                let leptos_options = leptos_options.clone();
+                move || shell(leptos_options.clone())
+            },
+        )
         .fallback(static_file_handler)
         .layer(TraceLayer::new_for_http())
         .with_state(leptos_options);
