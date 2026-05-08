@@ -14,6 +14,9 @@ leptos_axum = { version = "=0.8.9", optional = true }
 leptos_meta = { version = "=0.8.6" }
 leptos_router = { version = "=0.8.13" }
 tokio = { version = "1.48.0", features = ["macros", "net", "rt-multi-thread"], optional = true }
+tower-http = { version = "0.6.6", features = ["trace"], optional = true }
+tracing = { version = "0.1.41", optional = true }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter", "fmt"], optional = true }
 wasm-bindgen = { version = "0.2.105", optional = true }
 
 [features]
@@ -32,6 +35,9 @@ ssr = [
     "dep:axum",
     "dep:tokio",
     "dep:leptos_axum",
+    "dep:tower-http",
+    "dep:tracing",
+    "dep:tracing-subscriber",
     "leptos/ssr",
     "leptos_meta/ssr",
     "leptos_router/ssr",
@@ -52,7 +58,6 @@ style-file = "style/main.css"
 site-addr = "0.0.0.0:8080"
 reload-port = 3001
 browserquery = "defaults"
-env = "DEV"
 bin-features = ["ssr"]
 bin-default-features = false
 lib-features = ["hydrate"]
