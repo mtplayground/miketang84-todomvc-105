@@ -1,0 +1,60 @@
+[package]
+name = "miketang84-todomvc-105"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+axum = { version = "=0.8.9", optional = true }
+console_error_panic_hook = { version = "0.1.7", optional = true }
+leptos = { version = "=0.8.19" }
+leptos_axum = { version = "=0.8.9", optional = true }
+leptos_meta = { version = "=0.8.6" }
+leptos_router = { version = "=0.8.13" }
+tokio = { version = "1.48.0", features = ["macros", "net", "rt-multi-thread"], optional = true }
+wasm-bindgen = { version = "0.2.105", optional = true }
+
+[features]
+default = []
+csr = [
+    "dep:console_error_panic_hook",
+    "dep:wasm-bindgen",
+    "leptos/csr",
+]
+hydrate = [
+    "dep:console_error_panic_hook",
+    "dep:wasm-bindgen",
+    "leptos/hydrate",
+]
+ssr = [
+    "dep:axum",
+    "dep:tokio",
+    "dep:leptos_axum",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+]
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[package.metadata.leptos]
+output-name = "miketang84-todomvc-105"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+style-file = "style/main.css"
+site-addr = "0.0.0.0:8080"
+reload-port = 3001
+browserquery = "defaults"
+env = "DEV"
+bin-features = ["ssr"]
+bin-default-features = false
+lib-features = ["hydrate"]
+lib-default-features = false
+lib-profile-release = "wasm-release"
