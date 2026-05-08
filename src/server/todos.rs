@@ -104,3 +104,54 @@ pub async fn toggle_todo(
         ServerFnError::ServerError(format!("todo with id `{id}` was not found"))
     })
 }
+
+#[server]
+pub async fn edit_todo(
+    id: i64,
+    title: String,
+) -> Result<Option<Todo>, ServerFnError> {
+    use crate::state::AppState;
+    use sqlx::query_as;
+
+    let title = title.trim().to_owned();
+    let app_state = expect_context::<AppState>();
+
+    if title.is_empty() {
+        let deleted = query_as::<_, Todo>(
+            r#"
+                DELETE FROM todos
+                WHERE id = ?1
+                RETURNING id, title, completed, created_at, updated_at
+            "#,
+        )
+        .bind(id)
+        .fetch_optional(&app_state.pool)
+        .await?;
+
+        return deleted
+            .map(|_| None)
+            .ok_or_else(|| {
+                ServerFnError::ServerError(format!(
+                    "todo with id `{id}` was not found"
+                ))
+            });
+    }
+
+    let todo = query_as::<_, Todo>(
+        r#"
+            UPDATE todos
+            SET title = ?2,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?1
+            RETURNING id, title, completed, created_at, updated_at
+        "#,
+    )
+    .bind(id)
+    .bind(title)
+    .fetch_optional(&app_state.pool)
+    .await?;
+
+    todo.map(Some).ok_or_else(|| {
+        ServerFnError::ServerError(format!("todo with id `{id}` was not found"))
+    })
+}
