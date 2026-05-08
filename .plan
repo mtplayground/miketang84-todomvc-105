@@ -1,0 +1,45 @@
+Architecture plan for `mtplayground/miketang84-todomvc-105`
+
+Target stack
+- Rust workspace as a single Leptos + Axum SSR app.
+- `cargo-leptos` build flow for server binary plus hydrated WASM client.
+- SQLite via `sqlx` with embedded migrations for a self-contained deployable binary.
+
+Planned module structure
+- `Cargo.toml`: Leptos SSR, Axum, tokio, sqlx/sqlite/runtime-tokio-rustls, dotenvy, serde, thiserror, tracing.
+- `src/main.rs`: server bootstrap, env loading, tracing, socket binding, static file serving.
+- `src/lib.rs`: Leptos entrypoints and shared exports.
+- `src/app.rs`: root `App`, router, routes for `/`, `/active`, `/completed`, app shell.
+- `src/config.rs`: environment configuration (`APP_ENV`, `HOST`, `PORT`, `DATABASE_URL`).
+- `src/state.rs`: shared app state with SQLite pool.
+- `src/domain.rs`: shared `Todo` model, `Filter` enum, validation helpers, derived counts/view-model helpers.
+- `src/server/mod.rs`: server-only wiring.
+- `src/server/todos.rs`: all todo server functions (`list/add/toggle/edit/delete/toggle_all/clear_completed`).
+- `src/components/header.rs`: new-todo input and create submission UX.
+- `src/components/todo_list.rs`: reactive resource binding and empty-state handling.
+- `src/components/todo_item.rs`: toggle, destroy, inline edit state.
+- `src/components/footer.rs`: counts, filters, clear completed.
+- `migrations/`: SQLite schema, starting with a single todos table.
+- `public/` or `style/`: TodoMVC CSS and any static assets copied by the Leptos build.
+- `.env.example`: documented local runtime configuration.
+
+Shared types and data flow
+- `Todo { id: i64, title: String, completed: bool, created_at: ... }`.
+- `Filter { All, Active, Completed }` with conversion from route segment and SQL predicate selection.
+- Leptos components call typed server functions; server functions use shared `AppState` and return serializable domain types.
+- UI refresh should rely on a single todos resource keyed by current filter plus explicit invalidation after mutations.
+
+Issue dependency order
+- Foundation: #1, #2, #3, #4, #5.
+- Domain/data: #6, #7.
+- Backend mutations/queries: #8, #9, #10, #11, #12, #13.
+- UI composition: #14, #15, #16, #17, #18, #19, #20.
+- Hardening/polish: #21, #22, #23.
+
+Key design decisions
+- Keep the app as one crate unless later complexity justifies splitting; shared Leptos SSR apps benefit from co-locating UI and server function types.
+- Use route-driven filtering instead of query params so TodoMVC URLs map directly to `/`, `/active`, and `/completed`.
+- Put validation on the server side first (`trim`, non-empty title, max length cap) and surface structured errors back into the UI.
+- Use embedded migrations so Docker/runtime startup does not depend on external migration tooling.
+- Prefer a minimal schema: `id INTEGER PRIMARY KEY`, `title TEXT NOT NULL`, `completed BOOLEAN NOT NULL DEFAULT 0`, timestamps only if needed for stable ordering.
+- Keep TodoMVC compliance work until after features land; issue #22 should be a focused behavior and markup pass, not mixed into earlier issues.
