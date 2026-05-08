@@ -7,6 +7,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     use miketang84_todomvc_105::{
         app::{shell, App},
         config::RuntimeEnv,
+        state::AppState,
     };
     use tower_http::trace::TraceLayer;
     use tracing::info;
@@ -28,6 +29,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     init_tracing()?;
 
+    let app_state = AppState::new(&runtime_env.database_url).await?;
     let configuration = get_configuration(None)?;
     let mut leptos_options = configuration.leptos_options;
 
@@ -41,8 +43,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let app = Router::new()
         .leptos_routes(&leptos_options, routes, {
+            let app_state = app_state.clone();
             let leptos_options = leptos_options.clone();
-            move || shell(leptos_options.clone())
+            move || {
+                provide_context(app_state.clone());
+                shell(leptos_options.clone())
+            }
         })
         .fallback(static_file_handler)
         .layer(TraceLayer::new_for_http())
@@ -50,7 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     info!(
         %site_addr,
-        database_configured = runtime_env.database_url.is_some(),
+        database_configured = true,
         "listening"
     );
     let listener = tokio::net::TcpListener::bind(site_addr).await?;
