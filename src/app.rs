@@ -1,4 +1,7 @@
+use crate::server::todos::AddTodo;
+use leptos::html;
 use leptos::prelude::*;
+use leptos::server::ServerAction;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
@@ -43,12 +46,44 @@ pub fn App() -> impl IntoView {
 
 #[component]
 fn TodoShell() -> impl IntoView {
+    let add_todo = ServerAction::<AddTodo>::new();
+    let input_ref = NodeRef::<html::Input>::new();
+    let is_submitting = add_todo.pending();
+
+    let submit_new_todo = move |ev: leptos::ev::KeyboardEvent| {
+        if ev.key() != "Enter" {
+            return;
+        }
+
+        let Some(input) = input_ref.get() else {
+            return;
+        };
+
+        let title = input.value().trim().to_owned();
+
+        if title.is_empty() {
+            input.set_value("");
+            return;
+        }
+
+        add_todo.dispatch(AddTodo { title });
+        input.set_value("");
+    };
+
     view! {
         <>
             <section class="todoapp">
                 <header class="header">
                     <h1>"todos"</h1>
-                    <input class="new-todo" placeholder="What needs to be done?" autofocus=true />
+                    <input
+                        node_ref=input_ref
+                        class="new-todo"
+                        placeholder="What needs to be done?"
+                        autofocus=true
+                        autocomplete="off"
+                        prop:disabled=move || is_submitting.get()
+                        on:keydown=submit_new_todo
+                    />
                 </header>
                 <section class="main">
                     <input id="toggle-all" class="toggle-all" type="checkbox" />
