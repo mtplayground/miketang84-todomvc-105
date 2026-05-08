@@ -76,3 +76,31 @@ pub async fn add_todo(title: String) -> Result<Todo, ServerFnError> {
 
     Ok(todo)
 }
+
+#[server]
+pub async fn toggle_todo(
+    id: i64,
+    completed: bool,
+) -> Result<Todo, ServerFnError> {
+    use crate::state::AppState;
+    use sqlx::query_as;
+
+    let app_state = expect_context::<AppState>();
+    let todo = query_as::<_, Todo>(
+        r#"
+            UPDATE todos
+            SET completed = ?2,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?1
+            RETURNING id, title, completed, created_at, updated_at
+        "#,
+    )
+    .bind(id)
+    .bind(completed)
+    .fetch_optional(&app_state.pool)
+    .await?;
+
+    todo.ok_or_else(|| {
+        ServerFnError::ServerError(format!("todo with id `{id}` was not found"))
+    })
+}
