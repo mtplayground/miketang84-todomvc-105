@@ -4,8 +4,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     use axum::Router;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
-    use miketang84_todomvc_105::app::{shell, App};
-    use std::{env, net::SocketAddr};
+    use miketang84_todomvc_105::{
+        app::{shell, App},
+        config::RuntimeEnv,
+    };
     use tower_http::trace::TraceLayer;
     use tracing::info;
     use tracing_subscriber::EnvFilter;
@@ -22,22 +24,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         Ok(())
     }
-
-    fn site_addr_from_env() -> Result<Option<SocketAddr>, Box<dyn std::error::Error + Send + Sync>> {
-        match env::var("LEPTOS_SITE_ADDR") {
-            Ok(value) if value.trim().is_empty() => Ok(None),
-            Ok(value) => Ok(Some(value.parse()?)),
-            Err(env::VarError::NotPresent) => Ok(None),
-            Err(error) => Err(Box::new(error)),
-        }
-    }
+    let runtime_env = RuntimeEnv::load()?;
 
     init_tracing()?;
 
     let configuration = get_configuration(None)?;
     let mut leptos_options = configuration.leptos_options;
 
-    if let Some(site_addr) = site_addr_from_env()? {
+    if let Some(site_addr) = runtime_env.site_addr {
         leptos_options.site_addr = site_addr;
     }
 
@@ -54,7 +48,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .layer(TraceLayer::new_for_http())
         .with_state(leptos_options);
 
-    info!(%site_addr, "listening");
+    info!(
+        %site_addr,
+        database_configured = runtime_env.database_url.is_some(),
+        "listening"
+    );
     let listener = tokio::net::TcpListener::bind(site_addr).await?;
     axum::serve(listener, app.into_make_service()).await?;
 

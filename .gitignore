@@ -8,6 +8,8 @@ node_modules/
 .app_name
 .gh_user
 .github_token
+.env
+!.env.example
 .pipeline-state.json
 .gitkeep
 .progress
