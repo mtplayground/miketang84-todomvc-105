@@ -1,5 +1,21 @@
-use crate::domain::{Filter, Todo};
+use crate::domain::{Filter, Todo, TodoCounts};
 use leptos::prelude::*;
+
+#[cfg(feature = "ssr")]
+async fn current_todo_counts(
+    pool: &sqlx::SqlitePool,
+) -> Result<TodoCounts, sqlx::Error> {
+    sqlx::query_as::<_, TodoCounts>(
+        r#"
+            SELECT
+                SUM(CASE WHEN completed = 0 THEN 1 ELSE 0 END) AS active,
+                COUNT(*) AS total
+            FROM todos
+        "#,
+    )
+    .fetch_one(pool)
+    .await
+}
 
 #[server]
 pub async fn list_todos(filter: Filter) -> Result<Vec<Todo>, ServerFnError> {
@@ -173,4 +189,44 @@ pub async fn delete_todo(id: i64) -> Result<u64, ServerFnError> {
     .await?;
 
     Ok(result.rows_affected())
+}
+
+#[server]
+pub async fn toggle_all(completed: bool) -> Result<TodoCounts, ServerFnError> {
+    use crate::state::AppState;
+    use sqlx::query;
+
+    let app_state = expect_context::<AppState>();
+
+    query(
+        r#"
+            UPDATE todos
+            SET completed = ?1,
+                updated_at = CURRENT_TIMESTAMP
+        "#,
+    )
+    .bind(completed)
+    .execute(&app_state.pool)
+    .await?;
+
+    Ok(current_todo_counts(&app_state.pool).await?)
+}
+
+#[server]
+pub async fn clear_completed() -> Result<TodoCounts, ServerFnError> {
+    use crate::state::AppState;
+    use sqlx::query;
+
+    let app_state = expect_context::<AppState>();
+
+    query(
+        r#"
+            DELETE FROM todos
+            WHERE completed = 1
+        "#,
+    )
+    .execute(&app_state.pool)
+    .await?;
+
+    Ok(current_todo_counts(&app_state.pool).await?)
 }

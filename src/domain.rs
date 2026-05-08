@@ -11,6 +11,13 @@ pub struct Todo {
     pub updated_at: DateTime<Utc>,
 }
 
+#[cfg_attr(feature = "ssr", derive(sqlx::FromRow))]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TodoCounts {
+    pub active: i64,
+    pub total: i64,
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Filter {
